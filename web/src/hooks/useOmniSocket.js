@@ -43,7 +43,6 @@ export function useOmniSocket() {
         setOnline(true);
         outbox.current.forEach((f) => sock.send(JSON.stringify(f)));
         outbox.current = [];
-        // Re-join anything that was active before a reconnect.
         Object.entries(active.current).forEach(([platform, channel]) =>
           channel && sock.send(JSON.stringify({ op: "join", platform, channel }))
         );
@@ -55,7 +54,15 @@ export function useOmniSocket() {
         if (m.type === "message") {
           stamps.current.push(Date.now());
           setMessages((prev) => {
-            const next = [...prev, { id: ++idc.current, platform: m.platform, user: m.user, text: m.text }];
+            const next = [...prev, {
+              id: ++idc.current,
+              platform: m.platform,
+              user: m.user,
+              text: m.text,
+              color: m.color || null,
+              badges: m.badges || null,
+              fragments: m.fragments || null,
+            }];
             return next.length > MAX ? next.slice(-MAX) : next;
           });
         } else if (m.type === "status") {

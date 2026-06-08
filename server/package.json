@@ -1,0 +1,16 @@
+{
+  "name": "@omnichat/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "OmniChat backend — multiplexes Twitch/Kick/X live chat to clients over one socket",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  }
+}

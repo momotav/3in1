@@ -1,0 +1,20 @@
+{
+  "name": "omnichat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Unified live chat aggregator for Twitch, Kick and X — backend + React frontend",
+  "workspaces": ["server", "web"],
+  "scripts": {
+    "dev": "concurrently -n server,web -c yellow,magenta \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "npm --workspace @omnichat/server run dev",
+    "dev:web": "npm --workspace @omnichat/web run dev",
+    "build": "npm --workspace @omnichat/web run build",
+    "start": "npm --workspace @omnichat/server run start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

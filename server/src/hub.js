@@ -31,11 +31,12 @@ export class Hub {
       room = { clients: new Set(), status: { state: "connecting" }, source: null, platform, channel };
       this.rooms.set(key, room);
 
-      const emit = (user, text) => {
+      // `extra` is optional rich metadata (Twitch supplies { color, badges, fragments }).
+      const emit = (user, text, extra) => {
         if (!text) return;
         this.broadcast(room, {
           type: "message", id: ++messageId, platform, channel,
-          user, text, ts: Date.now(),
+          user, text, ts: Date.now(), ...(extra || {}),
         });
       };
       const status = (state, detail) => {

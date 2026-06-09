@@ -2,23 +2,39 @@ import React from "react";
 import { T, META } from "../theme.js";
 import Icon from "./Icon.jsx";
 
-// platform-aware emote image URL
 const emoteUrl = (platform, id) =>
   platform === "kick"
     ? `https://files.kick.com/emotes/${id}/fullsize`
     : `https://static-cdn.jtvnw.net/emoticons/v2/${id}/default/dark/2.0`;
 
+// Fallback: parse Kick-style [emote:id:name] tokens out of raw text,
+// so emotes render even if the backend didn't pre-split them into fragments.
+function parseKickEmotes(text) {
+  const re = /\[emote:(\d+):([^\]]+)\]/g;
+  const parts = [];
+  let last = 0, m;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) parts.push({ type: "text", text: text.slice(last, m.index) });
+    parts.push({ type: "emote", id: m[1], text: m[2], kick: true });
+    last = m.index + m[0].length;
+  }
+  if (parts.length === 0) return null;
+  if (last < text.length) parts.push({ type: "text", text: text.slice(last) });
+  return parts;
+}
+
 function Body({ platform, fragments, text }) {
-  if (!fragments || fragments.length === 0) {
+  let frags = fragments && fragments.length ? fragments : parseKickEmotes(text || "");
+  if (!frags || frags.length === 0) {
     return <span style={{ fontSize: 15, color: T.text, wordBreak: "break-word", lineHeight: 1.35 }}>{text}</span>;
   }
   return (
     <span style={{ fontSize: 15, color: T.text, wordBreak: "break-word", lineHeight: 1.35 }}>
-      {fragments.map((f, i) =>
+      {frags.map((f, i) =>
         f.type === "emote" ? (
           <img
             key={i}
-            src={emoteUrl(platform, f.id)}
+            src={emoteUrl(f.kick ? "kick" : platform, f.id)}
             alt={f.text}
             title={f.text}
             style={{ height: 22, verticalAlign: "middle", margin: "0 1px" }}

@@ -8,14 +8,46 @@ const FACTORIES = { twitch: createTwitchSource, kick: createKickSource, x: creat
 let messageId = 0;
 
 /**
- * The Hub owns all upstream platform connections and multiplexes them to
- * frontend clients. Connections are pooled and ref-counted by (platform,channel):
- * the first client to join a channel opens the upstream socket, the last to
- * leave closes it. This keeps us off per-viewer rate limits and CORS.
+ * Turn whatever the user typed into a clean channel/slug/query.
+ * Accepts bare names AND full stream links:
+ *   twitch.tv/xqc                -> xqc
+ *   twitch.tv/popout/xqc/chat    -> xqc
+ *   kick.com/trainwreckstv       -> trainwreckstv
+ *   x.com/ansem | twitter.com/.. -> @ansem        (mentions search)
+ *   "$SOL" / "from:ansem"        -> passed through unchanged (X query)
  */
+export function normalizeChannel(platform, raw) {
+  let s = String(raw || "").trim();
+  if (!s || s.toLowerCase() === "demo") return s.toLowerCase();
+
+  if (platform === "twitch") {
+    const m = s.match(/twitch\.tv\/(?:popout\/)?([^/?#]+)/i);
+    if (m) s = m[1];
+    return s.replace(/^#/, "").toLowerCase();
+  }
+
+  if (platform === "kick") {
+    const m = s.match(/kick\.com\/([^/?#]+)/i);
+    if (m) s = m[1];
+    return s.toLowerCase();
+  }
+
+  if (platform === "x") {
+    const m = s.match(/(?:x|twitter)\.com\/([^/?#]+)/i);
+    if (m) {
+      const seg = m[1];
+      if (!["i", "home", "search", "explore", "hashtag", "messages"].includes(seg.toLowerCase())) {
+        return "@" + seg.replace(/^@/, "").toLowerCase();
+      }
+    }
+    return s;
+  }
+  return s;
+}
+
 export class Hub {
   constructor() {
-    this.rooms = new Map(); // key -> { source, clients:Set, status, platform, channel }
+    this.rooms = new Map();
   }
 
   key(platform, channel) {
@@ -24,6 +56,8 @@ export class Hub {
 
   join(client, platform, channel) {
     if (!FACTORIES[platform] || !channel) return;
+    channel = normalizeChannel(platform, channel);
+    if (!channel) return;
     const key = this.key(platform, channel);
     let room = this.rooms.get(key);
 
@@ -31,7 +65,6 @@ export class Hub {
       room = { clients: new Set(), status: { state: "connecting" }, source: null, platform, channel };
       this.rooms.set(key, room);
 
-      // `extra` is optional rich metadata (Twitch supplies { color, badges, fragments }).
       const emit = (user, text, extra) => {
         if (!text) return;
         this.broadcast(room, {
@@ -55,6 +88,7 @@ export class Hub {
   }
 
   leave(client, platform, channel) {
+    channel = normalizeChannel(platform, channel);
     const room = this.rooms.get(this.key(platform, channel));
     if (!room) return;
     room.clients.delete(client);

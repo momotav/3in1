@@ -2,7 +2,11 @@ import React from "react";
 import { T, META } from "../theme.js";
 import Icon from "./Icon.jsx";
 
-const emoteUrl = (id) => `https://static-cdn.jtvnw.net/emoticons/v2/${id}/default/dark/2.0`;
+// platform-aware emote image URL
+const emoteUrl = (platform, id) =>
+  platform === "kick"
+    ? `https://files.kick.com/emotes/${id}/fullsize`
+    : `https://static-cdn.jtvnw.net/emoticons/v2/${id}/default/dark/2.0`;
 
 function Body({ platform, fragments, text }) {
   if (!fragments || fragments.length === 0) {
@@ -14,7 +18,7 @@ function Body({ platform, fragments, text }) {
         f.type === "emote" ? (
           <img
             key={i}
-            src={emoteUrl(f.id)}
+            src={emoteUrl(platform, f.id)}
             alt={f.text}
             title={f.text}
             style={{ height: 22, verticalAlign: "middle", margin: "0 1px" }}
@@ -60,5 +64,4 @@ function Row({ platform, user, text, color, badges, fragments }) {
   );
 }
 
-// memoized: a row never changes once rendered, so we skip re-render churn under load
 export default React.memo(Row);

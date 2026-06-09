@@ -10,7 +10,6 @@ async function lookupChatroomId(slug) {
   const url = `https://kick.com/api/v2/channels/${encodeURIComponent(slug)}`;
   const res = await impit.fetch(url);
   const body = await res.text();
-
   if (!res.ok) {
     console.error(`[kick] lookup "${slug}" -> HTTP ${res.status}; body[0:200]=${body.slice(0, 200)}`);
     throw new Error("HTTP " + res.status);
@@ -23,11 +22,26 @@ async function lookupChatroomId(slug) {
   }
   const id = data?.chatroom?.id;
   if (!id) {
-    console.error(`[kick] lookup "${slug}" -> no chatroom.id; top-level keys=[${Object.keys(data || {}).join(", ")}]`);
+    console.error(`[kick] lookup "${slug}" -> no chatroom.id; keys=[${Object.keys(data || {}).join(", ")}]`);
     throw new Error("no chatroom id");
   }
   console.log(`[kick] lookup "${slug}" -> chatroom id ${id}`);
   return id;
+}
+
+// Kick encodes emotes inline as [emote:ID:name]. Split content into text/emote fragments.
+function buildKickFragments(content) {
+  const re = /\[emote:(\d+):([^\]]+)\]/g;
+  const frags = [];
+  let last = 0, m;
+  while ((m = re.exec(content)) !== null) {
+    if (m.index > last) frags.push({ type: "text", text: content.slice(last, m.index) });
+    frags.push({ type: "emote", id: m[1], text: m[2] });
+    last = m.index + m[0].length;
+  }
+  if (frags.length === 0) return null; // no emotes -> frontend shows plain text
+  if (last < content.length) frags.push({ type: "text", text: content.slice(last) });
+  return frags;
 }
 
 export function createKickSource({ channel, emit, status }) {
@@ -58,7 +72,8 @@ export function createKickSource({ channel, emit, status }) {
         const frame = JSON.parse(data.toString());
         if (frame.event && frame.event.includes("ChatMessageEvent")) {
           const d = JSON.parse(frame.data);
-          emit(d?.sender?.username || "kick_user", d?.content || "");
+          const content = d?.content || "";
+          emit(d?.sender?.username || "kick_user", content, { fragments: buildKickFragments(content) });
         }
       } catch (_) {}
     });

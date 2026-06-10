@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { T, PLATFORMS } from "./theme.js";
 import { useOmniSocket } from "./hooks/useOmniSocket.js";
 import Header from "./components/Header.jsx";
@@ -47,23 +47,16 @@ export default function App() {
 
   return (
     <div style={{ minHeight: "100vh", background: T.bg, position: "relative" }}>
-      <div style={{
-        position: "fixed", top: 0, left: 0, right: 0, height: 2, zIndex: 50,
-        background: `linear-gradient(90deg,transparent,${T.gold} 20%,${T.goldSoft} 50%,${T.gold} 80%,transparent)`,
-        boxShadow: "0 0 24px 2px rgba(200,146,58,.35)",
-      }} />
-      <div style={{
-        position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0,
-        background: "radial-gradient(120% 90% at 50% -10%,rgba(200,146,58,.10),transparent 55%)",
-      }} />
+      {/* ink rule across the top, like a letterhead */}
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 3, background: T.text, zIndex: 50 }} />
 
       <div style={{
-        position: "relative", zIndex: 1, maxWidth: 1180, margin: "0 auto", padding: "0 18px 24px",
+        position: "relative", zIndex: 1, maxWidth: 1120, margin: "0 auto", padding: "0 22px 26px",
         display: "flex", flexDirection: "column", height: "100vh",
       }}>
         <Header total={messages.length} rate={ratePerMin} live={live} online={online} />
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 10, marginBottom: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 14, marginBottom: 18 }}>
           {PLATFORMS.map((p) => (
             <SourceCard
               key={p} platform={p} status={status[p]} value={inputs[p]}
@@ -80,14 +73,17 @@ export default function App() {
         />
 
         <div ref={scrollRef} onScroll={onScroll} className="oc-scroll"
-          style={{ flex: 1, overflowY: "auto", padding: "4px 2px 24px", display: "flex", flexDirection: "column", gap: 7 }}>
+          style={{ flex: 1, overflowY: "auto", padding: "0 2px 28px", borderTop: `1px solid ${T.text}` }}>
           {visible.length === 0 ? (
-            <div style={{ margin: "auto", textAlign: "center", color: T.dim, fontFamily: "'JetBrains Mono',monospace", fontSize: 13, lineHeight: 1.9 }}>
-              <b style={{ color: T.muted }}>no messages yet</b><br />
-              connect a channel above, or hit <b style={{ color: T.muted }}>Demo</b> to see all three together
+            <div style={{
+              margin: "120px auto 0", textAlign: "center", color: T.muted,
+              fontStyle: "italic", fontSize: 17, lineHeight: 1.8, maxWidth: 420,
+            }}>
+              No messages yet.<br />
+              <span style={{ fontSize: 15 }}>Connect a channel above, or press <b style={{ color: T.gold, fontStyle: "normal" }}>Demo</b> to watch all three platforms write in.</span>
             </div>
           ) : (
-            visible.map((m) => <MessageRow key={m.id} platform={m.platform} user={m.user} text={m.text} />)
+            visible.map((m) => <MessageRow key={m.id} platform={m.platform} user={m.user} text={m.text} color={m.color} badges={m.badges} fragments={m.fragments} />)
           )}
         </div>
       </div>
